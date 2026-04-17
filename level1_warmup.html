@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1단계 입문 · 서울경기 어린이 등산 지도</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Noto Sans KR',sans-serif;background:#f0f7f0;color:#1B4332;}
+
+  /* NAV */
+  .nav{display:flex;gap:0;border-bottom:3px solid #2E7D32;}
+  .nav a{flex:1;text-align:center;padding:14px 0;font-size:15px;font-weight:700;text-decoration:none;transition:all .2s;}
+  .nav a.active{color:white;}
+  .nav a:not(.active){color:#666;background:#f5f5f5;}
+  .nav a:not(.active):hover{background:#e0e0e0;}
+  .nav-green{background:#43A047;}
+  .nav-yellow{background:#F9A825;}
+  .nav-orange{background:#E64A19;}
+
+  /* HEADER */
+  .header{background:linear-gradient(135deg,#43A047,#2E7D32);color:white;padding:28px 32px 22px;position:relative;overflow:hidden;}
+  .header::after{content:'';position:absolute;top:-30px;right:-30px;width:180px;height:180px;background:rgba(255,255,255,0.06);border-radius:50%;}
+  .header h1{font-size:32px;font-weight:900;letter-spacing:-1px;margin-bottom:4px;}
+  .header .en{font-size:16px;opacity:0.8;font-weight:500;}
+  .header .meta{margin-top:10px;display:flex;gap:16px;flex-wrap:wrap;}
+  .header .tag{background:rgba(255,255,255,0.2);padding:5px 14px;border-radius:20px;font-size:13px;font-weight:600;}
+
+  /* LAYOUT */
+  .layout{display:grid;grid-template-columns:1fr 420px;min-height:calc(100vh - 200px);}
+
+  /* MAP */
+  #map{width:100%;height:100%;min-height:600px;}
+
+  /* SIDEBAR */
+  .sidebar{background:white;overflow-y:auto;max-height:calc(100vh - 200px);border-left:3px solid #C8E6C9;}
+  .sidebar-header{padding:16px 20px 12px;background:#E8F5E9;border-bottom:2px solid #C8E6C9;position:sticky;top:0;z-index:10;}
+  .sidebar-header h2{font-size:18px;font-weight:800;color:#2E7D32;}
+  .sidebar-header p{font-size:12px;color:#6D4C41;margin-top:2px;}
+
+  /* CARDS */
+  .card{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid #E8F5E9;cursor:pointer;transition:background .15s;}
+  .card:hover{background:#F1F8E9;}
+  .card.active{background:#E8F5E9;border-left:4px solid #43A047;}
+  .num{width:40px;height:40px;border-radius:50%;background:#43A047;color:white;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;flex-shrink:0;}
+  .info{}
+  .name{font-size:17px;font-weight:800;color:#1B4332;line-height:1.3;}
+  .route{font-size:12px;color:#8D6E63;margin-top:2px;}
+  .addr{font-size:11px;color:#A1887F;margin-top:1px;}
+  .time{font-size:12px;font-weight:700;padding:4px 12px;border-radius:14px;background:#E8F5E9;color:#2E7D32;white-space:nowrap;flex-shrink:0;text-align:center;line-height:1.4;}
+
+  /* HOME BADGE in sidebar */
+  .home-badge{display:flex;align-items:center;gap:8px;padding:10px 16px;background:#FFF8E1;border-bottom:2px solid #FFE082;font-size:13px;font-weight:700;color:#4E342E;}
+  .home-dot{width:14px;height:14px;background:#FFD600;border:2px solid #F57F17;border-radius:50%;flex-shrink:0;}
+
+  /* TABLET */
+  @media(max-width:900px){
+    .layout{grid-template-columns:1fr;grid-template-rows:45vh auto;}
+    .sidebar{max-height:none;border-left:none;border-top:3px solid #C8E6C9;}
+  }
+  /* MOBILE — iPhone 15 (393px) / iPhone 16 Pro (402px) */
+  @media(max-width:430px){
+    .nav{border-bottom-width:2px;}
+    .nav a{padding:10px 4px;font-size:12px;font-weight:800;line-height:1.3;}
+    .nav .mob-hide{display:none;}
+    .header{padding:16px 16px 14px;}
+    .header::after{width:100px;height:100px;top:-20px;right:-20px;}
+    .header h1{font-size:20px;letter-spacing:-0.5px;line-height:1.3;}
+    .header .en{font-size:12px;margin-top:2px;}
+    .header .meta{margin-top:8px;gap:6px;}
+    .header .tag{padding:3px 10px;font-size:11px;}
+    .layout{grid-template-columns:1fr;grid-template-rows:38vh auto;}
+    #map{min-height:250px;}
+    .sidebar{border-top:2px solid #C8E6C9;}
+    .sidebar-header{padding:12px 14px 8px;}
+    .sidebar-header h2{font-size:15px;}
+    .sidebar-header p{font-size:11px;}
+    .home-badge{padding:8px 14px;font-size:12px;}
+    .home-dot{width:12px;height:12px;}
+    .card{grid-template-columns:36px 1fr auto;gap:8px;padding:10px 12px;}
+    .num{width:34px;height:34px;font-size:13px;}
+    .name{font-size:15px;}
+    .route{font-size:11px;}
+    .addr{font-size:10px;}
+    .time{font-size:11px;padding:3px 8px;border-radius:10px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<div class="nav">
+  <a href="level1_warmup.html" class="nav-green active">1단계 입문 <span class="mob-hide">(Warm-up)</span></a>
+  <a href="level2_basic.html" class="nav-yellow">2단계 초급 <span class="mob-hide">(Basic)</span></a>
+  <a href="level3_intermediate.html" class="nav-orange">3단계 중급 <span class="mob-hide">(Intermediate)</span></a>
+</div>
+
+<!-- HEADER -->
+<div class="header">
+  <h1>서울·경기 어린이 등산 지도: 1단계 입문</h1>
+  <div class="en">Warm-up, Level 1 — 산 15곳</div>
+  <div class="meta">
+    <span class="tag">표고 200m 이하</span>
+    <span class="tag">왕복 1시간 이내</span>
+    <span class="tag">평탄한 길 · 초보자 OK</span>
+    <span class="tag">출발: 성동구 금호동</span>
+  </div>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+  <div id="map"></div>
+  <div class="sidebar">
+    <div class="home-badge">
+      <div class="home-dot"></div>
+      출발 기준: 성동구 금호동 자택
+    </div>
+    <div class="sidebar-header">
+      <h2>산 목록 (1~15)</h2>
+      <p>카드를 클릭하면 지도에서 위치를 확인할 수 있습니다</p>
+    </div>
+    <div id="card-list"></div>
+  </div>
+</div>
+
+<script>
+const HOME = [37.5572, 127.0148]; // 성동구 금호동
+
+const mountains = [
+  {n:1, name:'응봉산', lat:37.5563, lng:127.0245, route:'금호역 → 응봉산 정상', addr:'성동구 금호동', time:'도보 10분', elev:'94m'},
+  {n:2, name:'금호산', lat:37.5540, lng:127.0175, route:'금남시장 → 금호산 정상', addr:'성동구 금호동', time:'도보 5분', elev:'67m'},
+  {n:3, name:'대현산', lat:37.5485, lng:127.0190, route:'옥수역 → 대현산', addr:'성동구 옥수동', time:'도보 15분', elev:'95m'},
+  {n:4, name:'매봉산', lat:37.4890, lng:127.0460, route:'매봉역 → 매봉산 정상', addr:'강남구 도곡동', time:'차량 20분', elev:'101m'},
+  {n:5, name:'달맞이봉', lat:37.5580, lng:127.0100, route:'행당역 → 달맞이봉', addr:'성동구 행당동', time:'도보 15분', elev:'82m'},
+  {n:6, name:'남산(둘레길)', lat:37.5512, lng:126.9882, route:'충무로역 → 남산둘레길', addr:'중구 회현동', time:'차량 15분', elev:'262m(둘레길)'},
+  {n:7, name:'배봉산', lat:37.5730, lng:127.0560, route:'전농역 → 배봉산', addr:'동대문구 전농동', time:'차량 20분', elev:'108m'},
+  {n:8, name:'안산(자락길)', lat:37.5740, lng:126.9430, route:'독립문역 → 안산자락길', addr:'서대문구 봉원동', time:'차량 25분', elev:'296m(자락길)'},
+  {n:9, name:'와룡공원', lat:37.5760, lng:127.0060, route:'혜화역 → 와룡공원', addr:'종로구 혜화동', time:'차량 20분', elev:'110m'},
+  {n:10, name:'개운산', lat:37.5860, lng:127.0280, route:'안암역 → 개운산', addr:'성북구 안암동', time:'차량 20분', elev:'134m'},
+  {n:11, name:'서울숲(길)', lat:37.5445, lng:127.0375, route:'서울숲역 → 서울숲길', addr:'성동구 성수동', time:'도보 20분', elev:'평지'},
+  {n:12, name:'심학산(둘레)', lat:37.8560, lng:126.7680, route:'금호동 → 심학산', addr:'파주시 문산읍', time:'차량 60분', elev:'196m'},
+  {n:13, name:'서오릉(숲길)', lat:37.6280, lng:126.9120, route:'금호동 → 서오릉', addr:'고양시 덕양구', time:'차량 45분', elev:'평지'},
+  {n:14, name:'장릉(산책로)', lat:37.6190, lng:126.8470, route:'금호동 → 장릉', addr:'김포시 풍무동', time:'차량 55분', elev:'평지'},
+  {n:15, name:'황금산', lat:37.4450, lng:127.1350, route:'금호동 → 황금산', addr:'성남시 중원구', time:'차량 40분', elev:'148m'},
+];
+
+// ── MAP ──
+const map = L.map('map',{zoomControl:true}).setView([37.55, 127.00], 11);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
+  attribution:'© OpenStreetMap, © CARTO',
+  maxZoom:18
+}).addTo(map);
+
+// Home marker
+const homeIcon = L.divIcon({
+  className:'',
+  html:`<div style="width:24px;height:24px;background:#FFD600;border:3px solid #F57F17;border-radius:50%;box-shadow:0 0 0 6px rgba(255,214,0,0.25),0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#4E342E;">H</div>`,
+  iconSize:[24,24],
+  iconAnchor:[12,12]
+});
+L.marker(HOME,{icon:homeIcon,zIndex:1000})
+ .addTo(map)
+ .bindPopup(`<b style="font-family:'Noto Sans KR';font-size:14px;">성동구 금호동 자택</b><br><span style="font-family:'Noto Sans KR';font-size:12px;color:#666;">(출발점)</span>`)
+ .openPopup();
+
+// Mountain markers
+const markers = [];
+mountains.forEach(m => {
+  const icon = L.divIcon({
+    className:'',
+    html:`<div style="
+      width:32px;height:32px;border-radius:50%;
+      background:#43A047;border:2px solid #1B5E20;
+      color:white;font-size:14px;font-weight:900;
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 2px 6px rgba(0,0,0,0.3);
+      font-family:'Noto Sans KR';
+    ">${m.n}</div>`,
+    iconSize:[32,32],
+    iconAnchor:[16,16]
+  });
+
+  const marker = L.marker([m.lat, m.lng],{icon}).addTo(map);
+  marker.bindPopup(`
+    <div style="font-family:'Noto Sans KR';min-width:180px;">
+      <div style="font-size:18px;font-weight:800;color:#1B4332;margin-bottom:4px;">${m.n}. ${m.name}</div>
+      <div style="font-size:13px;color:#6D4C41;margin-bottom:2px;">${m.route}</div>
+      <div style="font-size:12px;color:#A1887F;margin-bottom:6px;">${m.addr}</div>
+      <div style="display:inline-block;background:#E8F5E9;color:#2E7D32;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:700;">자택 ${m.time}</div>
+      <div style="display:inline-block;background:#FFF8E1;color:#E65100;padding:3px 10px;border-radius:10px;font-size:12px;font-weight:700;margin-left:4px;">표고 ${m.elev}</div>
+    </div>
+  `);
+  markers.push(marker);
+});
+
+// Fit bounds to show all markers
+const allLatLngs = [HOME, ...mountains.map(m=>[m.lat,m.lng])];
+map.fitBounds(allLatLngs, {padding:[30,30]});
+
+// ── CARDS ──
+const cardList = document.getElementById('card-list');
+mountains.forEach((m,i) => {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <div class="num">${m.n}</div>
+    <div class="info">
+      <div class="name">${m.name}</div>
+      <div class="route">${m.route}</div>
+      <div class="addr">${m.addr} · 표고 ${m.elev}</div>
+    </div>
+    <div class="time">자택<br>${m.time}</div>
+  `;
+  card.addEventListener('click', () => {
+    document.querySelectorAll('.card').forEach(c=>c.classList.remove('active'));
+    card.classList.add('active');
+    map.setView([m.lat, m.lng], 14, {animate:true});
+    markers[i].openPopup();
+  });
+  cardList.appendChild(card);
+});
+</script>
+</body>
+</html>
